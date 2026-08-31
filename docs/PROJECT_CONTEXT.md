@@ -53,15 +53,18 @@ Merchants lack automated, intelligent, and safe recovery workflows that analyze 
    ├── Subscription (subscriptions)
    └── RecoveryCase (recovery_cases)
         │
-        ▼
-[ Deterministic Revenue-Risk Engine (services/risk_engine - Baseline v1) ]
-   ├── Observable Feature Extractor (extractor.py)
-   ├── Deterministic Rules & Reason Codes (rules.py)
-   ├── Risk Evaluation Engine (engine.py)
-   ├── Air-Gapped Baseline Evaluator (evaluator.py)
-   └── Minor Units & Basis Points Metrics (metrics.py)
-        │
-        ▼
+        ├─────────────────────────────────────────────┐
+        ▼                                             ▼
+[ Deterministic Risk Engine ]             [ AI Root-Cause Diagnosis ]
+(services/risk_engine - Baseline v1)     (agents/diagnosis - v1)
+   ├── Feature Context Extractor            ├── Sanitized Context Builder
+   ├── Deterministic Rules & Reasons        ├── Untrusted Provider Layer
+   ├── Baseline Evaluation Harness          ├── Pydantic Response Validator
+   └── Minor Units & Basis Points           └── Comparative AI Evaluator
+        │                                             │
+        └──────────────────────┬──────────────────────┘
+                               │
+                               ▼
 [ Synthetic Transaction Engine & Seeder (data/synthetic) ]
    ├── Profiles & Integer Probability Logic (0-9999 bps)
    ├── 8 Canonical Recovery Scenario Archetypes (docs/synthetic-scenarios.md)
@@ -79,6 +82,7 @@ Merchants lack automated, intelligent, and safe recovery workflows that analyze 
 * **Database:** PostgreSQL 16+ (SQLAlchemy 2.0+, asyncpg 0.31+)
 * **Synthetic Engine:** Deterministic RNG, integer basis points, evaluation metadata layer
 * **Risk Engine:** Deterministic rule-based baseline (`v1`), air-gapped evaluation harness, basis-point metrics
+* **AI Diagnosis Engine:** Read-only analytical reasoner (`v1`), provider abstraction (`MockLLMProvider`, `GenericHTTPLLMProvider`), evidence grounding, Pydantic schema validation
 * **Testing:** Pytest 9.1+, HTTPX 0.28+, pytest-asyncio 1.4+
 
 ## 7. Repository Structure
@@ -138,21 +142,41 @@ recover-ai/
 │       ├── metrics.py
 │       ├── models.py
 │       └── rules.py
-├── agents/ (.gitkeep)
+├── agents/
+│   └── diagnosis/
+│       ├── __init__.py
+│       ├── cli.py
+│       ├── context_builder.py
+│       ├── evaluator.py
+│       ├── schemas.py
+│       ├── service.py
+│       ├── prompts/
+│       │   └── v1/
+│       │       ├── system_prompt.md
+│       │       └── user_template.md
+│       └── providers/
+│           ├── __init__.py
+│           ├── base.py
+│           ├── http_provider.py
+│           └── mock.py
 ├── docs/
 │   ├── data-model.md
 │   ├── synthetic-scenarios.md
 │   ├── synthetic-data.md
 │   ├── risk-engine.md
+│   ├── ai-diagnosis.md
 │   ├── benchmark_v1.json
+│   ├── benchmark_ai_mock.json
 │   ├── PHASES/
 │   │   ├── PHASE_0.md
 │   │   ├── PHASE_1.md
 │   │   ├── PHASE_2.md
-│   │   └── PHASE_3.md
+│   │   ├── PHASE_3.md
+│   │   └── PHASE_4.md
 │   └── PROJECT_CONTEXT.md
 ├── tests/
 │   ├── __init__.py
+│   ├── test_ai_diagnosis.py
 │   ├── test_database.py
 │   ├── test_health.py
 │   ├── test_risk_engine.py
@@ -172,30 +196,33 @@ recover-ai/
 | Phase 1 — Database & Data Model | COMPLETE | 2026-08-31 | Established canonical PostgreSQL data models (`Customer`, `Payment`, `PaymentAttempt`, `Subscription`, `RecoveryCase`), Alembic migration framework, integer minor units money safety, exactly-one target constraint, and comprehensive PostgreSQL test suite (19 passing tests). |
 | Phase 2 — Synthetic Transaction Engine | COMPLETE | 2026-08-31 | Built 100% deterministic synthetic transaction generator, 5 behavioral profiles, 8 canonical scenario archetypes, integer probability logic, strictly air-gapped evaluation metadata layer, data quality validator, integer minor unit statistics, and PostgreSQL seeder. Verified with 37 passing automated tests and 5,000-payment dataset. |
 | Phase 3 — Deterministic Revenue-Risk Engine | COMPLETE | 2026-08-31 | Built non-AI deterministic revenue-risk evaluation engine (Baseline `v1`), distinct reason codes, decoupled recoverability from financial exposure, air-gapped evaluation harness, basis-point metrics, and frozen benchmark scorecard (`docs/benchmark_v1.json`). 53 automated tests passing. |
+| Phase 4 — AI Root-Cause Diagnosis | COMPLETE | 2026-08-31 | Built read-only AI root-cause diagnostic engine (`v1`), untrusted provider abstraction (`BaseLLMProvider`, `MockLLMProvider`, `GenericHTTPLLMProvider`), strict Pydantic response validation, structured evidence grounding (`EvidenceItem`), AI-opinion scoping, air-gapped evaluation harness, and mock validation scorecard (`docs/benchmark_ai_mock.json`). 73 automated tests passing. |
 
 ## 9. Current Phase
 
-* **Phase Number:** Phase 4
-* **Phase Name:** AI Root-Cause Diagnosis
-* **Phase Objective:** Build the AI-driven root cause diagnostic service that analyzes failed payment contexts, generates structured diagnostic explanations, and estimates recovery probability to outperform the Phase 3 baseline.
+* **Phase Number:** Phase 5
+* **Phase Name:** Recovery Decision Agent
+* **Phase Objective:** Build the recovery recommendation agent that maps diagnosed root causes to appropriate, candidate recovery interventions before evaluation by deterministic safety policies.
 * **Phase Status:** PLANNED
 
 ## 10. Implemented Components
 
+* **AI Root-Cause Diagnosis (`agents/diagnosis/` - Version `v1`):**
+  - `AIDiagnosisContextBuilder`: Sanitizes observable context, masks IDs, formats integer minor units (paise), and enforces zero ground-truth leakage.
+  - `DiagnosisAgent`: Coordinates immutable prompt rendering, untrusted provider calls, Pydantic validation, and deterministic fallbacks.
+  - Taxonomies: 7 categories (`transient_system_error`, `balance_or_limit_deficit`, `expired_or_invalid_method`, `persistent_issuer_decline`, `subscription_billing_issue`, `first_time_user_drop`, `insufficient_data`).
+  - Evidence Model: Structured `EvidenceItem(fact, source_field, inference)` for strict traceability.
+  - Providers: `MockLLMProvider` (offline testing) and `GenericHTTPLLMProvider` (generic REST JSON adapter).
+  - Evaluator (`AIDiagnosisEvaluator`): Multi-dimensional evaluation separating taxonomy accuracy, recoverability classification, grounding rate, and Baseline `v1` comparison.
 * **Deterministic Revenue-Risk Engine (`services/risk_engine/` - Baseline `v1`):**
-  - `ObservableFeatureExtractor`: Extracts customer tenure, attempt counts, decline codes, and historical success rates from observable entities.
-  - `DeterministicRiskEngine`: Evaluates `ObservableRiskContext` against frozen `v1` ruleset and outputs `RiskEvaluationResult`.
-  - Reason Codes (`RiskReasonCode`): `RC_EXHAUSTED_CONSECUTIVE_ATTEMPTS`, `RC_CHRONIC_DECLINE_HISTORY`, `RC_TRANSIENT_FAILURE_PROVEN_HISTORY`, `RC_INSUFFICIENT_FUNDS`, `RC_SUBSCRIPTION_BILLING_GLITCH`, `RC_FIRST_TIME_CHECKOUT_DROP`, `RC_HIGH_VALUE_EXPOSURE`, `RC_UNRESOLVED_HARD_DECLINE`.
-  - `BaselineEvaluator`: Downstream evaluation pipeline comparing risk engine predictions against air-gapped `RecoveryGroundTruth` via deterministic target matching.
-  - `calculate_evaluation_metrics`: Integer basis points (precision, recall, F1, accuracy, capture rate) and minor units monetary metrics.
-  - Benchmark CLI (`python -m services.risk_engine.cli`): Command-line benchmark generator publishing `docs/benchmark_v1.json`.
+  - `ObservableFeatureExtractor`, `DeterministicRiskEngine`, `BaselineEvaluator`, `calculate_evaluation_metrics`.
 * **Synthetic Transaction Engine (`data/synthetic/`):**
   - `SyntheticDataGenerator`, `DatasetValidator`, `calculate_statistics`, `seed_dataset_to_database`.
 * **Canonical Database Models (`data/models/`):**
   - SQLAlchemy 2.0 ORM models for `Customer`, `Payment`, `PaymentAttempt`, `Subscription`, `RecoveryCase`.
 * **Alembic Migration System (`data/migrations/`):** Initial migration `ed105aca8bfc_0001_initial_entities.py`.
 * **FastAPI Backend (`apps/api/`):** FastAPI application with CORS middleware and `GET /health` endpoint.
-* **Automated Test Suite (`tests/`):** 53 automated tests passing across health, database, synthetic, and risk engine modules.
+* **Automated Test Suite (`tests/`):** 73 automated tests passing across health, database, synthetic, risk engine, and AI diagnosis modules.
 
 ## 11. Database State
 
@@ -215,11 +242,12 @@ recover-ai/
 
 ## 13. AI/Agent State
 
-No AI/LLM integration implemented yet. Scheduled for Phase 4.
+* **Diagnosis Agent (`agents/diagnosis/`):** Read-only root-cause diagnostic reasoner. Zero write tools, zero payment access.
+* **Recovery Decision Agent (`agents/decision/`):** Scheduled for Phase 5.
 
 ## 14. External Integrations
 
-No external integrations implemented.
+No external payment integrations active.
 * Razorpay Test Mode integration is strictly deferred to Phase 7.
 
 ## 15. Important Architectural Decisions
@@ -257,11 +285,19 @@ No external integrations implemented.
 * **Date:** 2026-08-31
 
 ### ADR-009 — Decoupled Recoverability from Financial Exposure Priority
-* **Decision:** `predicted_recoverable` (Boolean) and `risk_level` (Enum) are evaluated as separate dimensions. High-value transactions attach exposure evidence without forcing recoverability on chronic failure accounts.
+* **Decision:** `predicted_recoverable` (Boolean) and `risk_level` (Enum) are evaluated as separate dimensions.
 * **Date:** 2026-08-31
 
 ### ADR-010 — Frozen Baseline Benchmark Versioning
-* **Decision:** The deterministic baseline is explicitly tagged as `v1` and frozen. Benchmark results (`docs/benchmark_v1.json`) serve as the empirical performance reference for future AI phases without post-hoc rule tuning.
+* **Decision:** The deterministic baseline is explicitly tagged as `v1` and frozen (`docs/benchmark_v1.json`).
+* **Date:** 2026-08-31
+
+### ADR-011 — Untrusted Provider Boundary & Strict Schema Validation
+* **Decision:** Providers return untrusted `RawLLMResponse`; `DiagnosisAgent` parses, validates via Pydantic (`AIDiagnosisPayload`), and produces trusted `AIDiagnosisResult`. Execution status (`SUCCESS`, `PROVIDER_ERROR`, `VALIDATION_ERROR`, `TIMEOUT`) is tracked explicitly.
+* **Date:** 2026-08-31
+
+### ADR-012 — Traceable Evidence Grounding & AI Scoped Opinions
+* **Decision:** Every evidence deduction requires `EvidenceItem(fact, source_field, inference)`. Field `ai_recoverability_assessment` is scoped strictly as qualitative analytical opinion, decoupled from recovery decisions.
 * **Date:** 2026-08-31
 
 ## 16. Frozen Baseline Benchmark Reference (`v1` — Seed 42, 5,000 Payments)
@@ -281,11 +317,11 @@ No external integrations implemented.
 ## 17. Last Verified State
 
 * **Date:** 2026-08-31
-* **Automated Tests:** 53/53 tests PASSED in 7.59s (`tests/test_health.py`, `tests/test_database.py`, `tests/test_synthetic.py`, `tests/test_risk_engine.py`).
-* **Frozen Benchmark:** Published `docs/benchmark_v1.json` and documented in `docs/risk-engine.md`.
-* **Security & Leakage Check:** Zero LLM/AI dependencies, zero Razorpay API dependencies, zero floating-point arithmetic.
+* **Automated Tests:** 73/73 tests PASSED in 4.68s (`tests/test_health.py`, `tests/test_database.py`, `tests/test_synthetic.py`, `tests/test_risk_engine.py`, `tests/test_ai_diagnosis.py`).
+* **Mock Validation Scorecard:** Published `docs/benchmark_ai_mock.json` and documented in `docs/ai-diagnosis.md`.
+* **Security & Leakage Check:** Strict read-only AI boundary, zero database write tools, zero Razorpay API dependencies, zero floating-point arithmetic.
 
 ## 18. Next Phase
 
-* **Next Phase:** Phase 4 — AI Root-Cause Diagnosis
+* **Next Phase:** Phase 5 — Recovery Decision Agent
 * **Status:** PLANNED

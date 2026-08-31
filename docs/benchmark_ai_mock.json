@@ -1,0 +1,41 @@
+{
+  "benchmark_type": "MOCK_VALIDATION",
+  "prompt_version": "v1",
+  "provider_name": "mock_diagnostic_provider",
+  "model_name": "mock-simulated-v1",
+  "dataset_seed": 42,
+  "evaluated_cases_count": 1676,
+  "successful_executions": 1676,
+  "failed_executions": 0,
+  "schema_validity_rate_bps": 10000,
+  "evidence_grounding_rate_bps": 7649,
+  "true_positives": 948,
+  "false_positives": 334,
+  "true_negatives": 107,
+  "false_negatives": 287,
+  "precision_bps": 7394,
+  "recall_bps": 7676,
+  "f1_score_bps": 7532,
+  "accuracy_bps": 6294,
+  "total_amount_at_risk_minor": 531161966,
+  "recoverable_amount_captured_minor": 283112395,
+  "recoverable_amount_missed_minor": 108691268,
+  "false_intervention_amount_minor": 112222531,
+  "revenue_capture_rate_bps": 7225,
+  "category_metrics": {
+    "total_evaluated": 1676,
+    "category_counts": {
+      "balance_or_limit_deficit": 443,
+      "first_time_user_drop": 219,
+      "transient_system_error": 576,
+      "insufficient_data": 394,
+      "subscription_billing_issue": 44
+    },
+    "ground_truth_scenario_agreement_count": 355,
+    "category_agreement_rate_bps": 2118
+  },
+  "baseline_v1_f1_score_bps": 5386,
+  "f1_score_delta_bps": 2146,
+  "baseline_v1_revenue_capture_rate_bps": 5015,
+  "revenue_capture_delta_bps": 2210
+}
