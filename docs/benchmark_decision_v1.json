@@ -1,0 +1,27 @@
+{
+  "decision_version": "v1",
+  "policy_version": "v1",
+  "dataset_seed": 42,
+  "evaluated_proposals_count": 1676,
+  "action_type_counts": {
+    "RETRY_LATER": 233,
+    "REQUEST_PAYMENT_METHOD_UPDATE": 201,
+    "NO_ACTION": 704,
+    "HUMAN_REVIEW": 268,
+    "RETRY_PAYMENT": 239,
+    "SUBSCRIPTION_RECOVERY_WORKFLOW": 31
+  },
+  "decision_status_counts": {
+    "PROPOSED": 704,
+    "BLOCKED": 704,
+    "REQUIRES_REVIEW": 268
+  },
+  "total_amount_at_risk_minor": 531161966,
+  "proposed_action_amount_minor": 87385606,
+  "human_review_amount_minor": 261601514,
+  "blocked_action_amount_minor": 182174846,
+  "no_action_amount_minor": 0,
+  "human_review_escalation_rate_bps": 1599,
+  "blocked_rate_bps": 4200,
+  "unsafe_action_proposal_count": 0
+}

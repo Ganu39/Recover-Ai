@@ -4,9 +4,9 @@ RecoverAI is an AI-powered Revenue Recovery platform designed to detect at-risk 
 
 ## Current Development Phase
 
-**Phase 4 — AI Root-Cause Diagnosis**
+**Phase 5 — Recovery Decision Agent**
 
-> **Note on Razorpay Integration:** Razorpay Test Mode integration is strictly deferred to a later phase (Phase 7). No live or test Razorpay credentials or payment processing logic are implemented during Phase 4.
+> **Note on Razorpay Integration:** Razorpay Test Mode integration is strictly deferred to a later phase (Phase 7). No live or test Razorpay credentials or payment processing logic are implemented during Phase 5.
 
 ## Technology Stack
 
@@ -16,6 +16,7 @@ RecoverAI is an AI-powered Revenue Recovery platform designed to detect at-risk 
 * **Synthetic Engine:** Deterministic RNG, integer basis points, evaluation metadata layer
 * **Risk Engine:** Deterministic rule-based baseline (`v1`), air-gapped evaluation harness, basis-point metrics
 * **AI Diagnosis Engine:** Read-only analytical reasoner (`v1`), provider abstraction (`MockLLMProvider`, `GenericHTTPLLMProvider`), evidence grounding, Pydantic schema validation
+* **Recovery Decision Agent:** Policy-first recommendation engine (`v1`/`v1`), deterministic proposal IDs, strict safety hard blocks, human-review escalation
 * **Testing:** Pytest, HTTPX, pytest-asyncio
 
 ## Repository Structure
@@ -32,24 +33,26 @@ recover-ai/
 │   ├── migrations/        # Alembic database migration scripts
 │   └── synthetic/         # Deterministic synthetic data generator & seeder
 ├── agents/
-│   └── diagnosis/         # Read-only AI Root-Cause Diagnosis Agent (Phase 4)
-│       ├── prompts/       # Immutable versioned prompt templates (v1)
-│       ├── providers/     # Base, Mock, and HTTP LLM providers
-│       ├── context_builder.py # Sanitized context extractor
-│       ├── evaluator.py   # AI diagnosis evaluation harness
-│       ├── schemas.py     # Pydantic schemas & taxonomy definitions
-│       └── service.py     # DiagnosisAgent orchestration
+│   ├── diagnosis/         # Read-only AI Root-Cause Diagnosis Agent (Phase 4)
+│   └── decision/          # Policy-First Recovery Decision Agent (Phase 5)
+│       ├── schemas.py     # Decision taxonomy, proposal contracts & enums
+│       ├── policy.py      # Deterministic safety policy rules (v1)
+│       ├── service.py     # RecoveryDecisionAgent orchestration
+│       ├── evaluator.py   # Decision evaluation & safety audit harness
+│       └── cli.py         # Decision benchmark CLI
 ├── services/
 │   └── risk_engine/       # Deterministic Revenue-Risk Engine (Baseline v1)
-├── tests/                 # Automated test suite (health, DB, synthetic, risk engine, AI diagnosis)
+├── tests/                 # Automated test suite (health, DB, synthetic, risk engine, diagnosis, decision)
 ├── docs/                  # System architecture, data model, scenarios, and phase specifications
 │   ├── data-model.md      # Data model ERD, schema, constraints, and status taxonomies
 │   ├── synthetic-scenarios.md # Canonical 8 recovery scenario archetypes & ground truth
 │   ├── synthetic-data.md  # Synthetic data generator architecture & statistics
 │   ├── risk-engine.md     # Baseline v1 rules, reason codes, metrics & benchmark results
 │   ├── ai-diagnosis.md    # AI diagnosis architecture, taxonomy, prompts & evaluation
+│   ├── recovery-decision.md # Recovery decision taxonomy, policy matrix & safety hierarchy
 │   ├── benchmark_v1.json  # Frozen benchmark report for Baseline v1 (Seed 42)
-│   ├── benchmark_ai_mock.json # Mock infrastructure validation scorecard
+│   ├── benchmark_ai_mock.json # Mock validation scorecard
+│   ├── benchmark_decision_v1.json # Published decision proposal benchmark
 │   ├── PROJECT_CONTEXT.md # Canonical persistent project context
 │   └── PHASES/            # Phase specification files
 ├── .env.example           # Environment template
@@ -117,9 +120,16 @@ Run the AI root-cause diagnosis benchmark (using mock provider for local validat
 python -m agents.diagnosis.cli --seed 42 --customers 1000 --payments 5000 --output docs/benchmark_ai_mock.json
 ```
 
+### Recovery Decision Agent Benchmark (v1)
+Run the recovery decision agent benchmark:
+```bash
+python -m agents.decision.cli --seed 42 --customers 1000 --payments 5000 --output docs/benchmark_decision_v1.json
+```
+
 Detailed documentation:
 * [docs/risk-engine.md](docs/risk-engine.md) — Baseline v1 specification & benchmark
 * [docs/ai-diagnosis.md](docs/ai-diagnosis.md) — AI diagnosis taxonomy, prompts & evaluation harness
+* [docs/recovery-decision.md](docs/recovery-decision.md) — Decision taxonomy, policy rules & precedence matrix
 
 ### Frontend Setup
 1. Navigate to the frontend workspace and install dependencies:

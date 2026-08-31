@@ -65,6 +65,13 @@ Merchants lack automated, intelligent, and safe recovery workflows that analyze 
         └──────────────────────┬──────────────────────┘
                                │
                                ▼
+[ Recovery Decision Agent (agents/decision - v1 / Policy v1) ]
+   ├── Deterministic Safety Hard Blocks (Attempt >= 3, Chronic decline)
+   ├── High-Value Pre-emptive Escalation (Amount >= ₹5,000)
+   ├── Domain Routing (Subscription workflow, Expired card, Cooldown retry)
+   └── Structured Explanation Chain & Deterministic Proposal IDs
+        │
+        ▼
 [ Synthetic Transaction Engine & Seeder (data/synthetic) ]
    ├── Profiles & Integer Probability Logic (0-9999 bps)
    ├── 8 Canonical Recovery Scenario Archetypes (docs/synthetic-scenarios.md)
@@ -83,6 +90,7 @@ Merchants lack automated, intelligent, and safe recovery workflows that analyze 
 * **Synthetic Engine:** Deterministic RNG, integer basis points, evaluation metadata layer
 * **Risk Engine:** Deterministic rule-based baseline (`v1`), air-gapped evaluation harness, basis-point metrics
 * **AI Diagnosis Engine:** Read-only analytical reasoner (`v1`), provider abstraction (`MockLLMProvider`, `GenericHTTPLLMProvider`), evidence grounding, Pydantic schema validation
+* **Recovery Decision Agent:** Policy-first recommendation engine (`v1`/`v1`), deterministic proposal IDs, strict safety hard blocks, human-review escalation
 * **Testing:** Pytest 9.1+, HTTPX 0.28+, pytest-asyncio 1.4+
 
 ## 7. Repository Structure
@@ -143,42 +151,54 @@ recover-ai/
 │       ├── models.py
 │       └── rules.py
 ├── agents/
-│   └── diagnosis/
+│   ├── diagnosis/
+│   │   ├── __init__.py
+│   │   ├── cli.py
+│   │   ├── context_builder.py
+│   │   ├── evaluator.py
+│   │   ├── schemas.py
+│   │   ├── service.py
+│   │   ├── prompts/
+│   │   │   └── v1/
+│   │   │       ├── system_prompt.md
+│   │   │       └── user_template.md
+│   │   └── providers/
+│   │       ├── __init__.py
+│   │       ├── base.py
+│   │       ├── http_provider.py
+│   │       └── mock.py
+│   └── decision/
 │       ├── __init__.py
 │       ├── cli.py
-│       ├── context_builder.py
 │       ├── evaluator.py
+│       ├── policy.py
 │       ├── schemas.py
-│       ├── service.py
-│       ├── prompts/
-│       │   └── v1/
-│       │       ├── system_prompt.md
-│       │       └── user_template.md
-│       └── providers/
-│           ├── __init__.py
-│           ├── base.py
-│           ├── http_provider.py
-│           └── mock.py
+│       └── service.py
 ├── docs/
 │   ├── data-model.md
 │   ├── synthetic-scenarios.md
 │   ├── synthetic-data.md
 │   ├── risk-engine.md
 │   ├── ai-diagnosis.md
+│   ├── recovery-decision.md
 │   ├── benchmark_v1.json
 │   ├── benchmark_ai_mock.json
+│   ├── benchmark_decision_v1.json
+│   ├── CHATGPT_CONTEXT.md
 │   ├── PHASES/
 │   │   ├── PHASE_0.md
 │   │   ├── PHASE_1.md
 │   │   ├── PHASE_2.md
 │   │   ├── PHASE_3.md
-│   │   └── PHASE_4.md
+│   │   ├── PHASE_4.md
+│   │   └── PHASE_5.md
 │   └── PROJECT_CONTEXT.md
 ├── tests/
 │   ├── __init__.py
 │   ├── test_ai_diagnosis.py
 │   ├── test_database.py
 │   ├── test_health.py
+│   ├── test_recovery_decision.py
 │   ├── test_risk_engine.py
 │   └── test_synthetic.py
 ├── .env.example
@@ -197,23 +217,26 @@ recover-ai/
 | Phase 2 — Synthetic Transaction Engine | COMPLETE | 2026-08-31 | Built 100% deterministic synthetic transaction generator, 5 behavioral profiles, 8 canonical scenario archetypes, integer probability logic, strictly air-gapped evaluation metadata layer, data quality validator, integer minor unit statistics, and PostgreSQL seeder. Verified with 37 passing automated tests and 5,000-payment dataset. |
 | Phase 3 — Deterministic Revenue-Risk Engine | COMPLETE | 2026-08-31 | Built non-AI deterministic revenue-risk evaluation engine (Baseline `v1`), distinct reason codes, decoupled recoverability from financial exposure, air-gapped evaluation harness, basis-point metrics, and frozen benchmark scorecard (`docs/benchmark_v1.json`). 53 automated tests passing. |
 | Phase 4 — AI Root-Cause Diagnosis | COMPLETE | 2026-08-31 | Built read-only AI root-cause diagnostic engine (`v1`), untrusted provider abstraction (`BaseLLMProvider`, `MockLLMProvider`, `GenericHTTPLLMProvider`), strict Pydantic response validation, structured evidence grounding (`EvidenceItem`), AI-opinion scoping, air-gapped evaluation harness, and mock validation scorecard (`docs/benchmark_ai_mock.json`). 73 automated tests passing. |
+| Phase 5 — Recovery Decision Agent | COMPLETE | 2026-08-31 | Built policy-first recovery decision agent (`v1`/`v1`), 6-action recovery taxonomy, deterministic proposal UUIDs (`uuid5`), strict policy precedence hierarchy (Hard Blocks > High-Value > Routing > AI), inspectable explanation chains, human-review escalation, and published decision benchmark scorecard (`docs/benchmark_decision_v1.json`). 100 automated tests passing. |
 
 ## 9. Current Phase
 
-* **Phase Number:** Phase 5
-* **Phase Name:** Recovery Decision Agent
-* **Phase Objective:** Build the recovery recommendation agent that maps diagnosed root causes to appropriate, candidate recovery interventions before evaluation by deterministic safety policies.
+* **Phase Number:** Phase 6
+* **Phase Name:** Deterministic Policy & Safety Gateway
+* **Phase Objective:** Implement the deterministic policy gateway that validates recovery decision proposals against merchant policies, daily recovery limits, customer communication quotas, and gateway velocity rules before permitting execution.
 * **Phase Status:** PLANNED
 
 ## 10. Implemented Components
 
+* **Recovery Decision Agent (`agents/decision/` - Version `v1`, Policy `v1`):**
+  - `RecoveryDecisionAgent`: Synthesizes policy-governed decision proposals.
+  - Precedence Hierarchy: Deterministic safety hard blocks strictly override high-value escalation and AI recommendations.
+  - Action Taxonomy (`RecoveryActionType`): `NO_ACTION`, `RETRY_PAYMENT`, `RETRY_LATER`, `REQUEST_PAYMENT_METHOD_UPDATE`, `SUBSCRIPTION_RECOVERY_WORKFLOW`, `HUMAN_REVIEW`.
+  - Proposal Status (`DecisionStatus`): `PROPOSED`, `REQUIRES_REVIEW`, `BLOCKED`, `NO_ACTION`.
+  - `derive_deterministic_proposal_id`: 100% deterministic UUID generation using `uuid5`.
+  - `RecoveryDecisionEvaluator`: Evaluates proposals against ground truth, verifies zero unsafe proposals, and outputs `docs/benchmark_decision_v1.json`.
 * **AI Root-Cause Diagnosis (`agents/diagnosis/` - Version `v1`):**
-  - `AIDiagnosisContextBuilder`: Sanitizes observable context, masks IDs, formats integer minor units (paise), and enforces zero ground-truth leakage.
-  - `DiagnosisAgent`: Coordinates immutable prompt rendering, untrusted provider calls, Pydantic validation, and deterministic fallbacks.
-  - Taxonomies: 7 categories (`transient_system_error`, `balance_or_limit_deficit`, `expired_or_invalid_method`, `persistent_issuer_decline`, `subscription_billing_issue`, `first_time_user_drop`, `insufficient_data`).
-  - Evidence Model: Structured `EvidenceItem(fact, source_field, inference)` for strict traceability.
-  - Providers: `MockLLMProvider` (offline testing) and `GenericHTTPLLMProvider` (generic REST JSON adapter).
-  - Evaluator (`AIDiagnosisEvaluator`): Multi-dimensional evaluation separating taxonomy accuracy, recoverability classification, grounding rate, and Baseline `v1` comparison.
+  - `AIDiagnosisContextBuilder`, `DiagnosisAgent`, `MockLLMProvider`, `GenericHTTPLLMProvider`, `AIDiagnosisEvaluator`.
 * **Deterministic Revenue-Risk Engine (`services/risk_engine/` - Baseline `v1`):**
   - `ObservableFeatureExtractor`, `DeterministicRiskEngine`, `BaselineEvaluator`, `calculate_evaluation_metrics`.
 * **Synthetic Transaction Engine (`data/synthetic/`):**
@@ -222,7 +245,7 @@ recover-ai/
   - SQLAlchemy 2.0 ORM models for `Customer`, `Payment`, `PaymentAttempt`, `Subscription`, `RecoveryCase`.
 * **Alembic Migration System (`data/migrations/`):** Initial migration `ed105aca8bfc_0001_initial_entities.py`.
 * **FastAPI Backend (`apps/api/`):** FastAPI application with CORS middleware and `GET /health` endpoint.
-* **Automated Test Suite (`tests/`):** 73 automated tests passing across health, database, synthetic, risk engine, and AI diagnosis modules.
+* **Automated Test Suite (`tests/`):** 100 automated tests passing across health, database, synthetic, risk engine, AI diagnosis, and decision modules.
 
 ## 11. Database State
 
@@ -243,7 +266,7 @@ recover-ai/
 ## 13. AI/Agent State
 
 * **Diagnosis Agent (`agents/diagnosis/`):** Read-only root-cause diagnostic reasoner. Zero write tools, zero payment access.
-* **Recovery Decision Agent (`agents/decision/`):** Scheduled for Phase 5.
+* **Recovery Decision Agent (`agents/decision/`):** Policy-first recommendation agent. Produces decision proposals only. Zero execution capabilities.
 
 ## 14. External Integrations
 
@@ -281,7 +304,7 @@ No external payment integrations active.
 * **Date:** 2026-08-31
 
 ### ADR-008 — Strict Air-Gapped Evaluation Layer for Hidden Ground Truth
-* **Decision:** Evaluation ground-truth labels (`is_recoverable`, `scenario_type`, `expected_recovery_reason`) are stored exclusively in `RecoveryGroundTruth` evaluation records outside database entities and observable feature contexts.
+* **Decision:** Evaluation ground-truth labels are stored exclusively in `RecoveryGroundTruth` evaluation records outside database entities and observable feature contexts.
 * **Date:** 2026-08-31
 
 ### ADR-009 — Decoupled Recoverability from Financial Exposure Priority
@@ -293,35 +316,34 @@ No external payment integrations active.
 * **Date:** 2026-08-31
 
 ### ADR-011 — Untrusted Provider Boundary & Strict Schema Validation
-* **Decision:** Providers return untrusted `RawLLMResponse`; `DiagnosisAgent` parses, validates via Pydantic (`AIDiagnosisPayload`), and produces trusted `AIDiagnosisResult`. Execution status (`SUCCESS`, `PROVIDER_ERROR`, `VALIDATION_ERROR`, `TIMEOUT`) is tracked explicitly.
+* **Decision:** Providers return untrusted `RawLLMResponse`; `DiagnosisAgent` parses, validates via Pydantic (`AIDiagnosisPayload`), and produces trusted `AIDiagnosisResult`.
 * **Date:** 2026-08-31
 
 ### ADR-012 — Traceable Evidence Grounding & AI Scoped Opinions
-* **Decision:** Every evidence deduction requires `EvidenceItem(fact, source_field, inference)`. Field `ai_recoverability_assessment` is scoped strictly as qualitative analytical opinion, decoupled from recovery decisions.
+* **Decision:** Every evidence deduction requires `EvidenceItem(fact, source_field, inference)`. Field `ai_recoverability_assessment` is scoped strictly as qualitative analytical opinion.
 * **Date:** 2026-08-31
 
-## 16. Frozen Baseline Benchmark Reference (`v1` — Seed 42, 5,000 Payments)
+### ADR-013 — Deterministic Safety Hard Blocks & Precedence Hierarchy
+* **Decision:** In the Recovery Decision Agent, deterministic safety hard blocks (attempts $\ge 3$, chronic decline) have highest precedence and strictly override high-value escalation and AI recommendations.
+* **Date:** 2026-08-31
 
-* **Evaluated Cases:** 1,676
-* **Confusion Matrix:** TP = 522, FP = 181, TN = 260, FN = 713
-* **Precision:** 7,425 bps (74.25%)
-* **Recall:** 4,226 bps (42.26%)
-* **F1 Score:** 5,386 bps (53.86%)
-* **Accuracy:** 4,665 bps (46.65%)
-* **Total Amount at Risk:** 531,161,966 paise (~₹5.31M)
-* **Recoverable Amount Captured (TP):** 196,495,127 paise (~₹1.96M)
-* **Recoverable Amount Missed (FN):** 195,308,536 paise (~₹1.95M)
-* **False Intervention Amount (FP):** 61,971,831 paise (~₹0.62M)
-* **Revenue Capture Rate:** 5,015 bps (50.15%)
+### ADR-014 — Deterministic Proposal Identity & Zero-Execution Boundary
+* **Decision:** Proposal IDs are 100% deterministic using `uuid5`. Decision proposals represent recommendation records only and contain zero execution capabilities or boolean execution triggers.
+* **Date:** 2026-08-31
+
+## 16. Frozen Benchmark References
+
+* **Baseline Risk Engine (`v1`):** Precision = 74.25%, Recall = 42.26%, F1 = 53.86%, Capture Rate = 50.15% ([docs/benchmark_v1.json](docs/benchmark_v1.json)).
+* **Mock AI Diagnosis (`v1`):** Precision = 73.94%, Recall = 76.76%, F1 = 75.32%, Capture Rate = 72.25% ([docs/benchmark_ai_mock.json](docs/benchmark_ai_mock.json)).
+* **Recovery Decision Proposals (`v1`/`v1`):** Total Evaluated = 1,676, Proposed = 704 (42.00%), Blocked = 704 (42.00%), Requires Review = 268 (15.99%), Unsafe Proposals = 0 ([docs/benchmark_decision_v1.json](docs/benchmark_decision_v1.json)).
 
 ## 17. Last Verified State
 
 * **Date:** 2026-08-31
-* **Automated Tests:** 73/73 tests PASSED in 4.68s (`tests/test_health.py`, `tests/test_database.py`, `tests/test_synthetic.py`, `tests/test_risk_engine.py`, `tests/test_ai_diagnosis.py`).
-* **Mock Validation Scorecard:** Published `docs/benchmark_ai_mock.json` and documented in `docs/ai-diagnosis.md`.
-* **Security & Leakage Check:** Strict read-only AI boundary, zero database write tools, zero Razorpay API dependencies, zero floating-point arithmetic.
+* **Automated Tests:** 100/100 tests PASSED in 4.63s (`tests/test_health.py`, `tests/test_database.py`, `tests/test_synthetic.py`, `tests/test_risk_engine.py`, `tests/test_ai_diagnosis.py`, `tests/test_recovery_decision.py`).
+* **Security & Boundary Verification:** Zero Razorpay imports, zero payment execution, zero database writes in decision agents, 100% policy safety compliance.
 
 ## 18. Next Phase
 
-* **Next Phase:** Phase 5 — Recovery Decision Agent
+* **Next Phase:** Phase 6 — Deterministic Policy & Safety Gateway
 * **Status:** PLANNED
