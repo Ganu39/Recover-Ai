@@ -4,15 +4,16 @@ RecoverAI is an AI-powered Revenue Recovery platform designed to detect at-risk 
 
 ## Current Development Phase
 
-**Phase 1 — Database & Data Model**
+**Phase 2 — Synthetic Transaction Engine**
 
-> **Note on Razorpay Integration:** Razorpay Test Mode integration is strictly deferred to a later phase (Phase 7). No live or test Razorpay credentials or payment processing logic are implemented during Phase 1.
+> **Note on Razorpay Integration:** Razorpay Test Mode integration is strictly deferred to a later phase (Phase 7). No live or test Razorpay credentials or payment processing logic are implemented during Phase 2.
 
 ## Technology Stack
 
 * **Frontend:** Next.js (React), TypeScript, Tailwind CSS
 * **Backend:** Python 3.14+, FastAPI, Uvicorn, Pydantic, Alembic
 * **Database:** PostgreSQL (SQLAlchemy 2.0+, asyncpg 0.31+)
+* **Synthetic Engine:** Deterministic RNG, integer basis points, evaluation metadata layer
 * **Testing:** Pytest, HTTPX, pytest-asyncio
 
 ## Repository Structure
@@ -26,12 +27,15 @@ recover-ai/
 │       └── main.py        # FastAPI entrypoint with /health endpoint
 ├── data/
 │   ├── models/            # Canonical database models (Customer, Payment, etc.)
-│   └── migrations/        # Alembic database migration scripts
+│   ├── migrations/        # Alembic database migration scripts
+│   └── synthetic/         # Deterministic synthetic data generator & seeder
 ├── agents/                # AI Agent definitions (deferred to future phases)
 ├── services/              # Domain services (deferred to future phases)
-├── tests/                 # Automated test suite (health check & PostgreSQL database tests)
-├── docs/                  # System architecture, data model, and phase specifications
+├── tests/                 # Automated test suite (health check, DB tests, synthetic tests)
+├── docs/                  # System architecture, data model, scenarios, and phase specifications
 │   ├── data-model.md      # Data model ERD, schema, constraints, and status taxonomies
+│   ├── synthetic-scenarios.md # Canonical 8 recovery scenario archetypes & ground truth
+│   ├── synthetic-data.md  # Synthetic data generator architecture & statistics
 │   ├── PROJECT_CONTEXT.md # Canonical persistent project context
 │   └── PHASES/            # Phase specification files
 ├── .env.example           # Environment template
@@ -81,7 +85,20 @@ To roll back migrations:
 alembic downgrade base
 ```
 
-Detailed database architecture and schema details are documented in [docs/data-model.md](docs/data-model.md).
+Detailed database architecture is documented in [docs/data-model.md](docs/data-model.md).
+
+### Synthetic Data Generation & Seeding
+Generate 1,000 customers and 5,000 payments with summary statistics:
+```bash
+python -m data.synthetic.cli --seed 42 --customers 1000 --payments 5000
+```
+
+Seed the generated dataset into PostgreSQL:
+```bash
+python -m data.synthetic.cli --seed 42 --customers 1000 --payments 5000 --seed-db
+```
+
+Detailed scenario definitions are in [docs/synthetic-scenarios.md](docs/synthetic-scenarios.md) and architecture details in [docs/synthetic-data.md](docs/synthetic-data.md).
 
 ### Frontend Setup
 1. Navigate to the frontend workspace and install dependencies:
@@ -114,7 +131,7 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ## Running Tests
 
-Run all automated tests (health check and PostgreSQL database tests):
+Run all automated tests (health check, PostgreSQL database tests, synthetic engine tests):
 ```bash
 pytest tests/ -v
 ```
