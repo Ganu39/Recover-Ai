@@ -4,9 +4,9 @@ RecoverAI is an AI-powered Revenue Recovery platform designed to detect at-risk 
 
 ## Current Development Phase
 
-**Phase 2 — Synthetic Transaction Engine**
+**Phase 3 — Deterministic Revenue-Risk Engine**
 
-> **Note on Razorpay Integration:** Razorpay Test Mode integration is strictly deferred to a later phase (Phase 7). No live or test Razorpay credentials or payment processing logic are implemented during Phase 2.
+> **Note on Razorpay Integration:** Razorpay Test Mode integration is strictly deferred to a later phase (Phase 7). No live or test Razorpay credentials or payment processing logic are implemented during Phase 3.
 
 ## Technology Stack
 
@@ -14,6 +14,7 @@ RecoverAI is an AI-powered Revenue Recovery platform designed to detect at-risk 
 * **Backend:** Python 3.14+, FastAPI, Uvicorn, Pydantic, Alembic
 * **Database:** PostgreSQL (SQLAlchemy 2.0+, asyncpg 0.31+)
 * **Synthetic Engine:** Deterministic RNG, integer basis points, evaluation metadata layer
+* **Risk Engine:** Deterministic rule-based baseline (`v1`), air-gapped evaluation harness, basis-point metrics
 * **Testing:** Pytest, HTTPX, pytest-asyncio
 
 ## Repository Structure
@@ -30,12 +31,15 @@ recover-ai/
 │   ├── migrations/        # Alembic database migration scripts
 │   └── synthetic/         # Deterministic synthetic data generator & seeder
 ├── agents/                # AI Agent definitions (deferred to future phases)
-├── services/              # Domain services (deferred to future phases)
-├── tests/                 # Automated test suite (health check, DB tests, synthetic tests)
+├── services/
+│   └── risk_engine/       # Deterministic Revenue-Risk Engine (Baseline v1)
+├── tests/                 # Automated test suite (health check, DB tests, synthetic, risk engine)
 ├── docs/                  # System architecture, data model, scenarios, and phase specifications
 │   ├── data-model.md      # Data model ERD, schema, constraints, and status taxonomies
 │   ├── synthetic-scenarios.md # Canonical 8 recovery scenario archetypes & ground truth
 │   ├── synthetic-data.md  # Synthetic data generator architecture & statistics
+│   ├── risk-engine.md     # Baseline v1 rules, reason codes, metrics & benchmark results
+│   ├── benchmark_v1.json  # Frozen benchmark report for Baseline v1 (Seed 42)
 │   ├── PROJECT_CONTEXT.md # Canonical persistent project context
 │   └── PHASES/            # Phase specification files
 ├── .env.example           # Environment template
@@ -80,13 +84,6 @@ Apply Alembic migrations to create the database schema:
 alembic upgrade head
 ```
 
-To roll back migrations:
-```bash
-alembic downgrade base
-```
-
-Detailed database architecture is documented in [docs/data-model.md](docs/data-model.md).
-
 ### Synthetic Data Generation & Seeding
 Generate 1,000 customers and 5,000 payments with summary statistics:
 ```bash
@@ -98,7 +95,13 @@ Seed the generated dataset into PostgreSQL:
 python -m data.synthetic.cli --seed 42 --customers 1000 --payments 5000 --seed-db
 ```
 
-Detailed scenario definitions are in [docs/synthetic-scenarios.md](docs/synthetic-scenarios.md) and architecture details in [docs/synthetic-data.md](docs/synthetic-data.md).
+### Risk Engine Baseline Benchmark (v1)
+Run the deterministic revenue-risk evaluation benchmark:
+```bash
+python -m services.risk_engine.cli --seed 42 --customers 1000 --payments 5000 --output docs/benchmark_v1.json
+```
+
+Detailed risk engine documentation is available in [docs/risk-engine.md](docs/risk-engine.md).
 
 ### Frontend Setup
 1. Navigate to the frontend workspace and install dependencies:

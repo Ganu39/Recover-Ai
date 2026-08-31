@@ -1,0 +1,28 @@
+{
+  "baseline_version": "v1",
+  "dataset_seed": 42,
+  "evaluated_cases_count": 1676,
+  "true_positives": 522,
+  "false_positives": 181,
+  "true_negatives": 260,
+  "false_negatives": 713,
+  "precision_bps": 7425,
+  "recall_bps": 4226,
+  "f1_score_bps": 5386,
+  "accuracy_bps": 4665,
+  "total_amount_at_risk_minor": 531161966,
+  "recoverable_amount_captured_minor": 196495127,
+  "recoverable_amount_missed_minor": 195308536,
+  "false_intervention_amount_minor": 61971831,
+  "revenue_capture_rate_bps": 5015,
+  "rule_firing_counts": {
+    "RC_INSUFFICIENT_FUNDS": 233,
+    "RC_FIRST_TIME_CHECKOUT_DROP": 493,
+    "RC_EXHAUSTED_CONSECUTIVE_ATTEMPTS": 509,
+    "RC_UNRESOLVED_HARD_DECLINE": 420,
+    "RC_TRANSIENT_FAILURE_PROVEN_HISTORY": 74,
+    "RC_HIGH_VALUE_EXPOSURE": 126,
+    "RC_CHRONIC_DECLINE_HISTORY": 66,
+    "RC_SUBSCRIPTION_BILLING_GLITCH": 44
+  }
+}
