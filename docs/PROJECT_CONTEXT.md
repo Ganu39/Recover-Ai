@@ -46,12 +46,20 @@ Merchants lack automated, intelligent, and safe recovery workflows that analyze 
    └── Endpoints (/health)
         │
         ▼
-[ PostgreSQL Database (Connection abstraction ready; schema in Phase 1) ]
+[ Canonical Data Model (data/models) ]
+   ├── Customer (customers)
+   ├── Payment (payments)
+   ├── PaymentAttempt (payment_attempts)
+   ├── Subscription (subscriptions)
+   └── RecoveryCase (recovery_cases)
+        │
+        ▼
+[ PostgreSQL Database & Alembic Migrations (data/migrations) ]
 ```
 
 * **Frontend:** Next.js (App Router), TypeScript, Tailwind CSS (`apps/web`).
-* **Backend:** FastAPI, Python 3.14, Pydantic Settings (`apps/api`).
-* **Database:** PostgreSQL connection and session abstraction via SQLAlchemy `create_async_engine` (`apps/api/core/database.py`).
+* **Backend:** FastAPI, Python 3.14, Pydantic Settings, SQLAlchemy 2.0 (`apps/api`).
+* **Database & Data Models:** Canonical ORM models in `data/models/`, Alembic migrations in `data/migrations/`.
 * **Agents:** Not implemented (directory placeholder `agents/` ready).
 * **Services:** Not implemented (directory placeholder `services/` ready).
 * **External Integrations:** None active (Razorpay Test Mode deferred to Phase 7).
@@ -59,8 +67,8 @@ Merchants lack automated, intelligent, and safe recovery workflows that analyze 
 ## 6. Technology Stack
 
 * **Frontend:** Next.js 14.2+, React 18, TypeScript 5, Tailwind CSS 3.4
-* **Backend:** Python 3.14+, FastAPI 0.110+, Uvicorn 0.28+, Pydantic 2.6+, Pydantic Settings 2.2+
-* **Database:** PostgreSQL (SQLAlchemy 2.0+, asyncpg 0.31+)
+* **Backend:** Python 3.14+, FastAPI 0.110+, Uvicorn 0.28+, Pydantic 2.6+, Pydantic Settings 2.2+, Alembic 1.19+
+* **Database:** PostgreSQL 16+ (SQLAlchemy 2.0+, asyncpg 0.31+)
 * **Testing:** Pytest 9.1+, HTTPX 0.28+, pytest-asyncio 1.4+
 * **Runtime/Tooling:** Node.js v24+, Python venv, Git
 
@@ -87,18 +95,36 @@ recover-ai/
 │       ├── postcss.config.js
 │       ├── tailwind.config.ts
 │       └── tsconfig.json
+├── data/
+│   ├── models/
+│   │   ├── __init__.py
+│   │   ├── base.py
+│   │   ├── customer.py
+│   │   ├── enums.py
+│   │   ├── payment.py
+│   │   ├── recovery_case.py
+│   │   └── subscription.py
+│   └── migrations/
+│       ├── env.py
+│       ├── script.py.mako
+│       └── versions/
+│           └── ed105aca8bfc_0001_initial_entities.py
 ├── agents/ (.gitkeep)
-├── data/ (.gitkeep)
 ├── docs/
+│   ├── data-model.md
 │   ├── PHASES/
+│   │   ├── PHASE_0.md
+│   │   └── PHASE_1.md
 │   └── PROJECT_CONTEXT.md
 ├── services/ (.gitkeep)
 ├── tests/
 │   ├── __init__.py
+│   ├── test_database.py
 │   └── test_health.py
 ├── .env.example
 ├── .gitignore
 ├── AGENTS.md
+├── alembic.ini
 └── README.md
 ```
 
@@ -107,28 +133,41 @@ recover-ai/
 | Phase | Status | Date | Summary |
 | ----- | ------ | ---- | ------- |
 | Phase 0 — Foundation & Engineering Rules | COMPLETE | 2026-08-31 | Established repository layout, FastAPI `/health`, Next.js frontend placeholder, database connection abstraction, automated pytest suite, `.env.example`, `AGENTS.md`, and `README.md`. |
+| Phase 1 — Database & Data Model | COMPLETE | 2026-08-31 | Established canonical PostgreSQL data models (`Customer`, `Payment`, `PaymentAttempt`, `Subscription`, `RecoveryCase`), Alembic migration framework, integer minor units money safety, exactly-one target constraint, and comprehensive PostgreSQL test suite (19 passing tests). |
 
 ## 9. Current Phase
 
-* **Phase Number:** Phase 1
-* **Phase Name:** Database & Data Model
-* **Phase Objective:** Design and implement PostgreSQL data models, relational schemas, constraints, and migrations for transactions, recovery events, safety policies, and audit logs.
-* **Phase Status:** IN PROGRESS
+* **Phase Number:** Phase 2
+* **Phase Name:** Synthetic Transaction Engine
+* **Phase Objective:** Build a deterministic synthetic data generator to simulate realistic customer journeys, payment failures, decline reasons, and recurring subscription failure patterns for recovery testing.
+* **Phase Status:** PLANNED
 
 ## 10. Implemented Components
 
+* **Canonical Database Models (`data/models/`):** SQLAlchemy 2.0 ORM models for `Customer`, `Payment`, `PaymentAttempt`, `Subscription`, `RecoveryCase`, and controlled status enums (`PaymentStatus`, `PaymentAttemptStatus`, `SubscriptionStatus`, `RecoveryCaseStatus`).
+* **Alembic Migration System (`data/migrations/`, `alembic.ini`):** Full async migration framework with initial migration `ed105aca8bfc_0001_initial_entities.py`.
 * **FastAPI Backend (`apps/api/main.py`):** FastAPI application with CORS middleware and `GET /health` endpoint returning `{"status": "ok"}`.
 * **Configuration Module (`apps/api/core/config.py`):** Pydantic Settings class reading environment variables and `.env`.
 * **Database Connection Abstraction (`apps/api/core/database.py`):** Async SQLAlchemy engine (`create_async_engine`) and session factory (`async_sessionmaker`, `get_db_session`).
 * **Next.js Frontend (`apps/web`):** Next.js 14 App Router application with TypeScript and Tailwind CSS displaying placeholder system status.
-* **Automated Test Suite (`tests/test_health.py`):** Pytest test case testing API startup and `GET /health` response.
+* **Automated Test Suite (`tests/`):** 19 automated tests covering health checks and exhaustive PostgreSQL database constraints, relationships, unique indexes, and negative value rejections.
 
 ## 11. Database State
 
 * **Configuration:** `DATABASE_URL` configured in `apps/api/core/config.py` (default: `postgresql+asyncpg://postgres:postgres@localhost:5432/recoverai`).
-* **Engine & Sessions:** SQLAlchemy async engine and session factory created in `apps/api/core/database.py`.
-* **Entities & Tables:** None created yet. Entity models and migrations are deferred to Phase 1.
-* **Migrations:** None created yet.
+* **Entities:**
+  * `Customer`: Merchant customer representation (`id`, `external_customer_id`, `email`, `name`, `created_at`, `updated_at`).
+  * `Payment`: Commercial payment intent (`id`, `external_payment_id`, `customer_id`, `amount_minor`, `currency`, `status`, `created_at`, `updated_at`).
+  * `PaymentAttempt`: Individual gateway attempts (`id`, `payment_id`, `attempt_number`, `status`, `failure_code`, `failure_reason`, `attempted_at`).
+  * `Subscription`: Recurring relationship (`id`, `external_subscription_id`, `customer_id`, `amount_minor`, `currency`, `status`, `interval`, `created_at`, `updated_at`).
+  * `RecoveryCase`: Opportunity record (`id`, `payment_id`, `subscription_id`, `status`, `amount_at_risk_minor`, `currency`, `detected_at`, `resolved_at`).
+* **Important Constraints:**
+  * Monetary non-negative check: `amount_minor >= 0`, `amount_at_risk_minor >= 0`.
+  * Attempt number positive check: `attempt_number > 0`.
+  * Unique external IDs: `external_customer_id`, `external_payment_id`, `external_subscription_id`.
+  * RecoveryCase Exactly-One Target: `CHECK ((payment_id IS NOT NULL AND subscription_id IS NULL) OR (payment_id IS NULL AND subscription_id IS NOT NULL))`.
+  * Controlled enum validation: Database-level CHECK constraints on all status columns.
+* **Detailed Documentation:** Refer to [`docs/data-model.md`](docs/data-model.md).
 
 ## 12. API State
 
@@ -162,10 +201,25 @@ No external integrations implemented.
 * **Reason:** High-throughput async I/O alignment with FastAPI and clean session lifecycle management.
 * **Date:** 2026-08-31
 
+### ADR-004 — Integer Minor Units for Monetary Safety
+* **Decision:** All monetary columns (`amount_minor`, `amount_at_risk_minor`) strictly use `BigInteger` storing integer minor units (paise/cents) accompanied by non-negative CHECK constraints.
+* **Reason:** Completely eliminates floating-point precision/rounding errors in fintech calculations.
+* **Date:** 2026-08-31
+
+### ADR-005 — RecoveryCase Target Invariant: Exactly One Target
+* **Decision:** `RecoveryCase` enforces a database-level CHECK constraint ensuring it references either a `Payment` OR a `Subscription`, but never both and never neither.
+* **Reason:** Guarantees data integrity for recovery workflows without ambiguity about the underlying financial asset.
+* **Date:** 2026-08-31
+
+### ADR-006 — Single Canonical Model Location in `data/models/`
+* **Decision:** Place all database entity models in `data/models/` as the single canonical location, avoiding duplication in `apps/api/models/`.
+* **Reason:** Eliminates model drift and keeps data definition decoupled from API transport layers.
+* **Date:** 2026-08-31
+
 ## 16. Known Limitations
 
-* Database connection abstraction is established, but tables and schemas do not exist yet (scheduled for Phase 1).
-* Frontend currently only displays a basic status placeholder without real-time API polling.
+* Live transaction ingestion and recovery processing are not active yet (scheduled for future phases).
+* PostgreSQL test environment requires native/container PostgreSQL instance.
 
 ## 17. Known Issues
 
@@ -173,8 +227,7 @@ None.
 
 ## 18. Future Work
 
-* Phase 1: Database schemas and data models (Transactions, Failures, Recovery Actions, Policy Rules, Audit Logs).
-* Phase 2: Synthetic transaction generator for testing failure scenarios.
+* Phase 2: Synthetic transaction generator for simulating failure and abandonment scenarios.
 * Phase 3: Deterministic revenue-risk detection engine.
 * Phase 4: AI root-cause diagnosis.
 * Phase 5: Recovery decision agent.
@@ -184,26 +237,24 @@ None.
 * Phase 9: Evaluation and recovery metrics calculation.
 * Phase 10: Demo UI, hardening, and submission materials.
 
-## 19. Current Phase Acceptance Criteria (Phase 1)
+## 19. Current Phase Acceptance Criteria (Phase 2)
 
-1. PostgreSQL entity models defined with explicit typed structures and constraints.
-2. Monetary fields represented in integer minor units (paise/cents) or deterministic Decimal types (no floating point).
-3. Foreign key relationships and audit timestamp fields established.
-4. Migration framework configured and initial migration generated.
-5. Automated tests verifying database session lifecycle and model creation.
+1. Synthetic transaction engine generates realistic customer profiles, payment intents, and attempts.
+2. Supports customizable failure distributions (insufficient funds, expired card, network failure, 3DS drop-off).
+3. Supports subscription recurring payment failure simulations.
+4. Generates deterministic, reproducible transaction datasets for testing recovery pipelines.
 
 ## 20. Last Verified State
 
 * **Date:** 2026-08-31
-* **Backend Automated Tests:** `tests/test_health.py::test_health_check_returns_200` PASSED (100%).
-* **Backend Server Startup:** Uvicorn started on `http://127.0.0.1:8000`, `GET /health` returned HTTP 200 `{"status": "ok"}`.
-* **Frontend Type Checking:** `tsc --noEmit` passed with 0 errors.
-* **Frontend Production Build:** `next build` completed successfully.
-* **Frontend Server Startup:** Next.js started on `http://localhost:3000`, `GET /` returned HTTP 200.
+* **PostgreSQL Database Tests:** 18 database test cases in `tests/test_database.py` PASSED (100%) against PostgreSQL 16.3.
+* **Alembic Migration Verification:** `alembic upgrade head -> downgrade base -> upgrade head` executed cleanly against clean PostgreSQL database.
+* **Backend Health Regression Test:** `tests/test_health.py::test_health_check_returns_200` PASSED (HTTP 200 `{"status": "ok"}`).
+* **Total Automated Tests:** 19/19 PASSED in 3.83s.
 * **Security Check:** Verified no `.env` files or secrets committed, no hardcoded API keys.
-* **Phase Leakage Check:** Verified no LLM, Razorpay, auth, or business logic code introduced.
+* **Phase Leakage Check:** Verified no LLM, Razorpay, auth, or business API endpoints introduced.
 
 ## 21. Next Phase
 
-* **Next Phase:** Phase 1 — Database & Data Model
-* **Status:** IN PROGRESS (Specification and implementation pending execution approval)
+* **Next Phase:** Phase 2 — Synthetic Transaction Engine
+* **Status:** PLANNED

@@ -45,6 +45,10 @@ yarn-error.log*
 pnpm-debug.log*
 .turbo
 
+# Test Database & Portable Tools
+.tools/
+.test_pgdata/
+
 # IDE & OS
 .idea/
 .vscode/
