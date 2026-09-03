@@ -357,8 +357,8 @@ No external payment integrations active.
 * **Decision:** Phase 7 implements the bounded execution layer (`ExecutionService`, `v1`). Executes only Phase 6-approved proposals, revalidates authorization before dispatch, isolates Razorpay behind `BasePaymentProvider` (`RazorpayTestProvider`), enforces strict Test Mode (`rzp_test_...` key pattern only, failing closed on live mode or live keys), enforces deterministic execution idempotency (`uuid5`), handles transport timeouts as `UNKNOWN_PROVIDER_STATE` without blind duplicate execution, verifies HMAC-SHA256 webhook signatures, performs state reconciliation, and emits immutable execution audit records with zero secret leakage.
 * **Date:** 2026-09-03
 
-### ADR-017 — Production-Quality Operations Frontend & Stitch MCP Architecture
-* **Decision:** Buildathon frontend implemented as a Next.js 14 application in `apps/web/` designed with Stitch MCP. Exposes 4 top-level views (Command Center Dashboard, Recovery Cases Directory, Safeguards & Governance Matrix, and Analytics Ledger), a 6-stage visual pipeline funnel, 4-flow judge demo bar, and an end-to-end 7-stage case investigation modal. Integrates with FastAPI read-only endpoints (`/api/v1/overview`, `/api/v1/cases`, `/api/v1/cases/{id}`, `/api/v1/safeguards`, `/api/v1/analytics`) and provides transparent fallback to the canonical Seed 42 frozen benchmark cache.
+### ADR-018 — Razorpay Test Mode Integration & Orders API Semantics
+* **Decision:** Phase 7 connects `RazorpayTestProvider` to official Razorpay Orders API (`POST /v1/orders` / `client.order.create`) with exact integer paise amounts and INR currency. Order creation creates an authoritative gateway order (`ORDER_CREATED` / `AWAITING_PAYMENT`, Recovered: ₹0.00). Financial revenue is confirmed strictly upon receipt and verification of authentic HMAC-SHA256 webhooks (`order.paid`, `payment.captured`). Webhook endpoint `POST /api/v1/webhooks/razorpay` verifies `X-Razorpay-Signature` with constant-time `hmac.compare_digest` and uses `X-Razorpay-Event-Id` for zero-duplicate replay safety. Controlled demo endpoint `POST /api/v1/demo/razorpay-recovery` surfaces full 7-stage live trace to the operations frontend.
 * **Date:** 2026-09-03
 
 ## 16. Frozen Benchmark References
@@ -372,12 +372,13 @@ No external payment integrations active.
 ## 17. Last Verified State
 
 * **Date:** 2026-09-03
-* **Automated Tests:** 184 tests PASSED in 1.93s across Phases 0–7 and API endpoints (`tests/test_health.py`, `tests/test_synthetic.py`, `tests/test_risk_engine.py`, `tests/test_ai_diagnosis.py`, `tests/test_recovery_decision.py`, `tests/test_safety_gateway.py`, `tests/test_execution_layer.py`, `tests/test_api_endpoints.py`).
+* **Automated Tests:** 201 tests PASSED across Phases 0–7, Razorpay Test Mode integration, and API endpoints (`tests/test_health.py`, `tests/test_synthetic.py`, `tests/test_risk_engine.py`, `tests/test_ai_diagnosis.py`, `tests/test_recovery_decision.py`, `tests/test_safety_gateway.py`, `tests/test_execution_layer.py`, `tests/test_razorpay_integration.py`, `tests/test_api_endpoints.py`).
 * **Frontend Verification:** `npm run type-check` PASSED (0 errors), `npm run lint` PASSED (0 warnings/errors), `npm run build` PASSED (100% static production prerendering).
 * **Security & Boundary Verification:** Live Razorpay execution strictly prohibited and fails closed; Razorpay imports isolated strictly to `services/execution/razorpay_provider.py`; zero AI execution bypass; zero floating-point monetary arithmetic; 0 bps unauthorized execution rate; 0 bps duplicate execution rate.
 
 ## 18. Project Status
 
-* **Status:** ALL PLANNED PHASES (Phase 0 through Phase 7) COMPLETE.
-* **Frontend/Productization:** COMPLETE (Next.js 14 Command Center + Stitch MCP design).
+* **Status:** ALL PLANNED PHASES (Phase 0 through Phase 7) COMPLETE + RAZORPAY TEST MODE INTEGRATION COMPLETE.
+* **Frontend/Productization:** COMPLETE (Next.js 14 Command Center + Stitch MCP design + Razorpay Live Flow Demo).
 * **Phase 8:** NONE (Strictly no Phase 8).
+

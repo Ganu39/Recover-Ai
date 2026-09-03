@@ -59,11 +59,95 @@ export default function HomePage() {
   }, []);
 
   // Quick-Demo scenario selector
-  const handleSelectScenario = (scenarioId: string) => {
+  const handleSelectScenario = async (scenarioId: string) => {
     setActiveScenario(scenarioId);
 
     if (scenarioId === "all") {
       setCases(CANONICAL_CASES);
+      return;
+    }
+
+    if (scenarioId === "razorpay_live_flow") {
+      setIsLoading(true);
+      try {
+        const demoRes = await RecoverAIApiClient.runRazorpayDemo();
+        const demoData = demoRes.data;
+        const rzpCase: RecoveryCaseItem = {
+          case_id: demoData.case_id || "demo-rzp-001",
+          target_type: "payment",
+          target_id: demoData.target_id || "target-rzp-001",
+          customer_id: "cust-rzp-001",
+          customer_name: demoData.customer_name || "Aarav Sharma",
+          customer_email: demoData.customer_email || "aarav.sharma@example.com",
+          amount_minor: demoData.amount_minor || 150000,
+          currency: demoData.currency || "INR",
+          latest_failure_code: demoData.decline_code || "BAD_REQUEST_GATEWAY_TIMEOUT",
+          target_attempt_count: 1,
+          customer_success_rate_bps: 10000,
+          subscription_status: null,
+          risk_level: "LOW",
+          risk_score_bps: 8500,
+          predicted_recoverable: true,
+          ai_diagnosis: {
+            root_cause: "Payment authorization failure due to temporary gateway timeout.",
+            recoverability: "RECOVERABLE",
+            recoverability_reason: "Customer in good standing with 100% settlement history; transient network error.",
+            confidence: "HIGH",
+            failure_category: "GATEWAY_ERROR",
+            evidence: [
+              { signal_type: "NETWORK_ERROR", description: "Gateway timeout during bank auth step", relevance: "Direct trigger" },
+              { signal_type: "CUSTOMER_HISTORY", description: "5 successful previous checkouts", relevance: "Positive credit signal" },
+            ],
+            observed_facts: [
+              "Declined on attempt #1",
+              "Amount ₹1,500.00 is below ₹5,000 threshold",
+              "Zero card expiration or chronic decline flags",
+            ],
+            model: "AI-Diagnosis-v1",
+            prompt_version: "v1",
+          },
+          decision_proposal: {
+            proposal_id: "prop-rzp-test-001",
+            action_type: "RETRY_PAYMENT",
+            decision_status: "PROPOSED",
+            rationale: "Gateway authorized automatic recovery attempt via Razorpay Test Mode Orders API (POST /v1/orders).",
+            observed_facts: ["Transient decline", "100% customer history"],
+            ai_inferences: ["Recoverable with high confidence"],
+            policy_checks: ["Attempt ceiling <= 2", "Action in allowlist", "Zero hard blocks"],
+          },
+          gateway_result: {
+            gateway_decision: "APPROVED",
+            reason_code: "APPROVED_FOR_EXECUTION_LAYER",
+            eligible_for_execution_layer: true,
+            checks_evaluated: ["VERSION_CONTRACT", "IDENTITY_CHECK", "FINANCIAL_INTEGRITY", "ACTION_ALLOWLIST", "RETRY_CEILING", "KILL_SWITCH"],
+            checks_passed: ["VERSION_CONTRACT", "IDENTITY_CHECK", "FINANCIAL_INTEGRITY", "ACTION_ALLOWLIST", "RETRY_CEILING", "KILL_SWITCH"],
+            blocking_conditions: [],
+            audit_reference: "audit-rzp-demo-001",
+          },
+          execution_record: {
+            execution_id: "exec-rzp-demo-001",
+            status: demoData.reconciled_status || "RECONCILED",
+            attempt_number: 2,
+            provider_reference: demoData.provider_reference || "order_test_805ecf8e",
+            idempotency_key: "recoverai-exec-rzp-demo-uuid5",
+            amount_minor: demoData.confirmed_recovered_minor || 150000,
+            created_at: new Date().toISOString(),
+          },
+          timeline: (demoData.pipeline_stages || []).map((s: any, idx: number) => ({
+            stage: s.stage,
+            timestamp: `10:0${idx}:00`,
+            title: s.stage,
+            description: s.details,
+            status: s.status === "ORDER_CREATED" ? "SUCCEEDED" : s.status,
+          })),
+        };
+        setCases([rzpCase, ...CANONICAL_CASES]);
+        setSelectedCase(rzpCase);
+      } catch (err) {
+        console.error("Razorpay demo failed", err);
+      } finally {
+        setIsLoading(false);
+      }
       return;
     }
 

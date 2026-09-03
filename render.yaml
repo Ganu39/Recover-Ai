@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: recoverai-api
+    runtime: python
+    buildCommand: pip install -r apps/api/requirements.txt
+    startCommand: uvicorn apps.api.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
+      - key: API_HOST
+        value: 0.0.0.0
+      - key: API_ENV
+        value: production
+      - key: RAZORPAY_ENV
+        value: test
+      - key: RAZORPAY_KEY_ID
+        sync: false
+      - key: RAZORPAY_KEY_SECRET
+        sync: false
+      - key: RAZORPAY_WEBHOOK_SECRET
+        sync: false

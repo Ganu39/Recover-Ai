@@ -18,12 +18,24 @@ Revenue at Risk → Risk Detection → AI Root-Cause Diagnosis → Recovery Deci
 * **Confirmed Reconciled Recovery:** ₹5,61,955.98 (456 executions, 65.9% yield)
 * **Deferred Cooldown:** ₹2,90,641.37 (233 cases)
 * **Safety Invariant Violations:** **0 bps (Zero violations)**
-* **Automated Regression Suite:** **184 passing tests** across all phases
+* **Automated Regression Suite:** **201 passing tests** across all phases
+
+## Razorpay Test Mode Integration
+
+RecoverAI connects directly with **Razorpay Test Mode** using official supported APIs:
+
+* **Chosen Gateway Operation:** Official **Razorpay Orders API** (`POST /v1/orders` / `client.order.create`). Razorpay does not support direct failed payment retries (`POST /payments/:id/retry`); recovering revenue is executed by issuing an authoritative Order for the exact integer paise amount and INR currency.
+* **Payment Lifecycle Semantics:** Order creation creates a gateway order (`ORDER_CREATED` / `AWAITING_PAYMENT`, Recovered: ₹0.00). Revenue is only confirmed when an authoritative payment event is verified.
+* **Webhook Signature Verification:** `POST /api/v1/webhooks/razorpay` processes `order.paid`, `payment.captured`, `payment_link.paid`, and `payment.failed` with constant-time HMAC-SHA256 signature verification (`X-Razorpay-Signature`).
+* **Deduplication & Replay Safety:** `X-Razorpay-Event-Id` prevents duplicate event processing and prevents double-counting revenue.
+* **Security & Credential Boundaries:** Enforces `rzp_test_...` key prefix. Live credentials (`rzp_live_...`) and non-test environments fail closed immediately with a `SecurityError`. Zero secrets in logs, audit records, or frontend client.
+* **Controlled End-to-End Demo:** `POST /api/v1/demo/razorpay-recovery` runs a full 7-stage live trace with verified reconciliation.
 
 ## Technology Stack
 
 * **Frontend:** Next.js 14, TypeScript, Tailwind CSS, Lucide Icons, Stitch MCP Design System
 * **Backend:** Python 3.14+, FastAPI, Uvicorn, Pydantic, Alembic
+* **Payment Integration:** Razorpay Test Mode (`razorpay` SDK + HTTP Basic Auth + HMAC-SHA256 Webhook Verification)
 * **Database:** PostgreSQL (SQLAlchemy 2.0+, asyncpg 0.31+)
 * **Synthetic Engine:** Deterministic RNG, integer basis points, evaluation metadata layer
 * **Risk Engine:** Deterministic rule-based baseline (`v1`), air-gapped evaluation harness
@@ -31,49 +43,6 @@ Revenue at Risk → Risk Detection → AI Root-Cause Diagnosis → Recovery Deci
 * **Recovery Decision Agent:** Policy-first recommendation engine (`v1`/`v1`), deterministic proposal UUIDs (`uuid5`), strict safety hard blocks
 * **Deterministic Safety Gateway:** Phase 6 multi-stage invariant validation, kill switch, sliding-window rate limiting, replay protection
 * **Bounded Recovery Execution:** Phase 7 test-mode provider dispatch (`RazorpayTestProvider`, `MockPaymentProvider`), webhook reconciliation, atomic idempotency
-
-## Repository Structure
-
-```text
-recover-ai/
-├── apps/
-│   ├── web/               # Next.js frontend application
-│   └── api/               # FastAPI backend application
-│       ├── core/          # Configuration and database connection abstraction
-│       └── main.py        # FastAPI entrypoint with /health endpoint
-├── data/
-│   ├── models/            # Canonical database models (Customer, Payment, etc.)
-│   ├── migrations/        # Alembic database migration scripts
-│   └── synthetic/         # Deterministic synthetic data generator & seeder
-├── agents/
-│   ├── diagnosis/         # Read-only AI Root-Cause Diagnosis Agent (Phase 4)
-│   └── decision/          # Policy-First Recovery Decision Agent (Phase 5)
-│       ├── schemas.py     # Decision taxonomy, proposal contracts & enums
-│       ├── policy.py      # Deterministic safety policy rules (v1)
-│       ├── service.py     # RecoveryDecisionAgent orchestration
-│       ├── evaluator.py   # Decision evaluation & safety audit harness
-│       └── cli.py         # Decision benchmark CLI
-├── services/
-│   └── risk_engine/       # Deterministic Revenue-Risk Engine (Baseline v1)
-├── tests/                 # Automated test suite (health, DB, synthetic, risk engine, diagnosis, decision)
-├── docs/                  # System architecture, data model, scenarios, and phase specifications
-│   ├── data-model.md      # Data model ERD, schema, constraints, and status taxonomies
-│   ├── synthetic-scenarios.md # Canonical 8 recovery scenario archetypes & ground truth
-│   ├── synthetic-data.md  # Synthetic data generator architecture & statistics
-│   ├── risk-engine.md     # Baseline v1 rules, reason codes, metrics & benchmark results
-│   ├── ai-diagnosis.md    # AI diagnosis architecture, taxonomy, prompts & evaluation
-│   ├── recovery-decision.md # Recovery decision taxonomy, policy matrix & safety hierarchy
-│   ├── benchmark_v1.json  # Frozen benchmark report for Baseline v1 (Seed 42)
-│   ├── benchmark_ai_mock.json # Mock validation scorecard
-│   ├── benchmark_decision_v1.json # Published decision proposal benchmark
-│   ├── PROJECT_CONTEXT.md # Canonical persistent project context
-│   └── PHASES/            # Phase specification files
-├── .env.example           # Environment template
-├── .gitignore             # Root git ignore rules
-├── AGENTS.md              # Engineering rules and safety constraints
-├── alembic.ini            # Alembic migration configuration
-└── README.md              # Project overview and setup instructions
-```
 
 ## Local Setup Instructions
 
@@ -88,100 +57,27 @@ recover-ai/
    ```bash
    cp .env.example .env
    ```
-2. Set your PostgreSQL `DATABASE_URL` in `.env`.
-
-### Backend Setup
-1. Create and activate a Python virtual environment:
-   ```bash
-   python -m venv .venv
-   # Windows (PowerShell):
-   .\.venv\Scripts\Activate.ps1
-   # Linux/macOS:
-   source .venv/bin/activate
-   ```
-2. Install backend dependencies:
-   ```bash
-   pip install -r apps/api/requirements.txt
+2. Configure your Razorpay Test Mode credentials in `.env`:
+   ```env
+   RAZORPAY_KEY_ID=rzp_test_your_key_id
+   RAZORPAY_KEY_SECRET=your_test_key_secret
+   RAZORPAY_WEBHOOK_SECRET=your_webhook_secret
+   RAZORPAY_ENV=test
    ```
 
-### Database Migrations
-Apply Alembic migrations to create the database schema:
-```bash
-alembic upgrade head
-```
-
-### Synthetic Data Generation & Seeding
-Generate 1,000 customers and 5,000 payments with summary statistics:
-```bash
-python -m data.synthetic.cli --seed 42 --customers 1000 --payments 5000
-```
-
-Seed the generated dataset into PostgreSQL:
-```bash
-python -m data.synthetic.cli --seed 42 --customers 1000 --payments 5000 --seed-db
-```
-
-### Risk Engine Baseline Benchmark (v1)
-Run the deterministic revenue-risk evaluation benchmark:
-```bash
-python -m services.risk_engine.cli --seed 42 --customers 1000 --payments 5000 --output docs/benchmark_v1.json
-```
-
-### AI Root-Cause Diagnosis Benchmark
-Run the AI root-cause diagnosis benchmark (using mock provider for local validation):
-```bash
-python -m agents.diagnosis.cli --seed 42 --customers 1000 --payments 5000 --output docs/benchmark_ai_mock.json
-```
-
-### Recovery Decision Agent Benchmark (v1)
-Run the recovery decision agent benchmark:
-```bash
-python -m agents.decision.cli --seed 42 --customers 1000 --payments 5000 --output docs/benchmark_decision_v1.json
-```
-
-Detailed documentation:
-* [docs/risk-engine.md](docs/risk-engine.md) — Baseline v1 specification & benchmark
-* [docs/ai-diagnosis.md](docs/ai-diagnosis.md) — AI diagnosis taxonomy, prompts & evaluation harness
-* [docs/recovery-decision.md](docs/recovery-decision.md) — Decision taxonomy, policy rules & precedence matrix
-
-### Frontend Setup
-1. Navigate to the frontend workspace and install dependencies:
+### Running the Services
+1. **Start Backend API:**
    ```bash
-   cd apps/web
-   npm install
-   cd ../..
+   .\.venv\Scripts\python.exe -m uvicorn apps.api.main:app --host 127.0.0.1 --port 8000
    ```
+2. **Start Frontend Web App:**
+   ```bash
+   cd apps/web && npm run dev
+   ```
+   Open [http://localhost:3000](http://localhost:3000) to view the Operations Command Center.
 
-## Starting Services
-
-### Starting the Backend
-From the repository root:
+### Running Automated Tests
 ```bash
-uvicorn apps.api.main:app --host 127.0.0.1 --port 8000 --reload
-```
-Verify the health endpoint:
-```bash
-curl http://127.0.0.1:8000/health
-# Response: {"status": "ok"}
+.\.venv\Scripts\python.exe -m pytest tests/test_razorpay_integration.py tests/test_execution_layer.py -v
 ```
 
-### Starting the Frontend
-From `apps/web`:
-```bash
-cd apps/web
-npm run dev
-```
-Open [http://localhost:3000](http://localhost:3000) in your browser.
-
-## Running Tests
-
-Run all automated tests (health check, PostgreSQL database tests, synthetic engine tests):
-```bash
-pytest tests/ -v
-```
-
-Run frontend type checking / build:
-```bash
-cd apps/web
-npm run build
-```

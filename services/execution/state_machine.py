@@ -37,6 +37,8 @@ class ExecutionStateMachine:
         },
         ExecutionStatus.SUCCEEDED: {
             ExecutionStatus.RECONCILED,
+            ExecutionStatus.FAILED,
+            ExecutionStatus.REQUIRES_REVIEW,
         },
         ExecutionStatus.DEFERRED: {
             ExecutionStatus.EXECUTION_STARTED,

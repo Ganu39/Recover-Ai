@@ -100,4 +100,56 @@ export class RecoverAIApiClient {
   static async getAnalytics(): Promise<{ data: AnalyticsResponse; isLive: boolean }> {
     return this.fetchWithFallback<AnalyticsResponse>("/api/v1/analytics", CANONICAL_ANALYTICS);
   }
+
+  static async runRazorpayDemo(): Promise<{ data: any; isLive: boolean }> {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/v1/demo/razorpay-recovery`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+      if (res.ok) {
+        const json = await res.json();
+        return { data: json, isLive: true };
+      }
+    } catch (err) {
+      console.warn("Demo API error", err);
+    }
+
+    return {
+      data: {
+        demo_type: "RAZORPAY_TEST_MODE_FLOW",
+        status: "SUCCESS",
+        case_id: "demo-rzp-case-1",
+        target_id: "target-rzp-1",
+        customer_name: "Aarav Sharma",
+        customer_email: "aarav.sharma@example.com",
+        amount_minor: 150000,
+        amount_display: "₹1,500.00",
+        currency: "INR",
+        decline_code: "BAD_REQUEST_GATEWAY_TIMEOUT",
+        gateway_decision: "APPROVED",
+        provider: "Razorpay Test Mode",
+        provider_operation: "POST /v1/orders",
+        provider_reference: "order_test_805ecf8e-fdf4",
+        initial_execution_status: "SUCCEEDED",
+        reconciled_status: "RECONCILED",
+        confirmed_recovered_minor: 150000,
+        confirmed_recovered_display: "₹1,500.00",
+        webhook_event: "order.paid",
+        webhook_signature_verified: true,
+        duplicate_protection_verified: true,
+        pipeline_stages: [
+          { stage: "1. Transaction Ingest", status: "COMPLETED", details: "Payment declined (Attempt #1)" },
+          { stage: "2. Revenue Risk Engine", status: "COMPLETED", details: "₹1,500.00 exposure; 100% history (8500 bps recoverable)" },
+          { stage: "3. AI Root-Cause Diagnosis", status: "COMPLETED", details: "Diagnosis: Temporary gateway timeout during authorization" },
+          { stage: "4. Recovery Decision Agent", status: "COMPLETED", details: "Proposed RETRY_PAYMENT" },
+          { stage: "5. Deterministic Safety Gateway", status: "APPROVED", details: "12/12 Safety Invariants PASSED. Gateway: APPROVED" },
+          { stage: "6. Razorpay Test Mode Order Creation", status: "ORDER_CREATED", details: "Created official Order via POST /v1/orders (Awaiting Payment)" },
+          { stage: "7. Webhook & State Reconciliation", status: "RECONCILED", details: "Verified HMAC-SHA256 webhook order.paid -> Confirmed Recovered ₹1,500.00" },
+        ],
+      },
+      isLive: false,
+    };
+  }
 }
+

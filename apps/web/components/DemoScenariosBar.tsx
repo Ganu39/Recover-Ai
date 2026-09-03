@@ -58,6 +58,15 @@ export const DemoScenariosBar: React.FC<DemoScenariosBarProps> = ({
       color: "border-rose-500/40 text-rose-300 bg-rose-500/5",
       badge: "Safety Blocked",
     },
+    {
+      id: "razorpay_live_flow",
+      label: "5. Razorpay Test Mode",
+      desc: "Live Orders API (POST /v1/orders) → HMAC Webhook → Reconciled",
+      icon: <Sparkles className="w-4 h-4 text-brand-cyan" />,
+      tag: "RAZORPAY_TEST_MODE",
+      color: "border-brand-cyan/40 text-cyan-300 bg-brand-cyan/10",
+      badge: "Razorpay Demo",
+    },
   ];
 
   return (
