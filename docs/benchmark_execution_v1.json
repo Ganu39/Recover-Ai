@@ -1,0 +1,20 @@
+{
+  "execution_mode": "simulation",
+  "total_proposals_received": 1676,
+  "authorized_for_execution": 689,
+  "executions_attempted": 456,
+  "executions_succeeded": 456,
+  "executions_failed": 0,
+  "executions_deferred": 233,
+  "executions_unknown_state": 0,
+  "executions_reconciled": 0,
+  "amount_at_risk_minor": 531161966,
+  "authorized_amount_minor": 85259735,
+  "attempted_amount_minor": 56195598,
+  "provider_confirmed_amount_minor": 56195598,
+  "recovered_amount_minor": 56195598,
+  "failed_amount_minor": 0,
+  "unauthorized_execution_rate_bps": 0,
+  "duplicate_execution_rate_bps": 0,
+  "financial_integrity_violation_rate_bps": 0
+}

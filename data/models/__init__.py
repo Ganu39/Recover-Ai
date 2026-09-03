@@ -10,6 +10,7 @@ from data.models.enums import (
 )
 from data.models.payment import Payment, PaymentAttempt
 from data.models.recovery_case import RecoveryCase
+from data.models.recovery_execution import RecoveryExecution
 from data.models.subscription import Subscription
 
 __all__ = [
@@ -19,6 +20,7 @@ __all__ = [
     "PaymentAttempt",
     "Subscription",
     "RecoveryCase",
+    "RecoveryExecution",
     "PaymentStatus",
     "PaymentAttemptStatus",
     "SubscriptionStatus",

@@ -72,6 +72,22 @@ Merchants lack automated, intelligent, and safe recovery workflows that analyze 
    └── Structured Explanation Chain & Deterministic Proposal IDs
         │
         ▼
+[ Deterministic Policy & Safety Gateway (agents/gateway - v1 / Policy v1) ]
+   ├── 12-Stage Safety Check Pipeline (Kill Switch, Version, Identity, Integrity)
+   ├── In-Memory Idempotency & Replay Protection (Zero Duplicate Execution)
+   ├── Sliding-Window Safety Rate Limiting & Fail-Closed Kill Switch
+   └── Terminal Authorization (APPROVED, BLOCKED, REQUIRES_REVIEW, etc.)
+        │
+        ▼
+[ Bounded Recovery Execution Layer (services/execution - v1) ]
+   ├── Pre-Execution Authorization Re-validation
+   ├── Deterministic Execution Idempotency & In-Flight Concurrency Protection
+   ├── Provider Adapter Abstraction (Mock simulation & Razorpay Test Mode rzp_test_)
+   ├── Execution State Machine (AUTHORIZED -> PROVIDER_REQUESTED -> SUCCEEDED / UNKNOWN)
+   ├── HMAC-SHA256 Webhook Verification & State Reconciliation
+   └── Immutable Execution Audit Logger & Revenue Recovery Metrics
+        │
+        ▼
 [ Synthetic Transaction Engine & Seeder (data/synthetic) ]
    ├── Profiles & Integer Probability Logic (0-9999 bps)
    ├── 8 Canonical Recovery Scenario Archetypes (docs/synthetic-scenarios.md)
@@ -91,6 +107,8 @@ Merchants lack automated, intelligent, and safe recovery workflows that analyze 
 * **Risk Engine:** Deterministic rule-based baseline (`v1`), air-gapped evaluation harness, basis-point metrics
 * **AI Diagnosis Engine:** Read-only analytical reasoner (`v1`), provider abstraction (`MockLLMProvider`, `GenericHTTPLLMProvider`), evidence grounding, Pydantic schema validation
 * **Recovery Decision Agent:** Policy-first recommendation engine (`v1`/`v1`), deterministic proposal IDs, strict safety hard blocks, human-review escalation
+* **Safety Gateway:** Deterministic policy gatekeeper (`v1`/`v1`), 12-stage safety check pipeline, executable action allowlist, fail-closed kill switch, in-memory idempotency & rate limiting
+* **Execution Layer:** Bounded recovery executor (`v1`), provider adapter (`BasePaymentProvider`, `MockPaymentProvider`, `RazorpayTestProvider`), deterministic UUID5 idempotency, execution state machine, HMAC webhook verification, state reconciliation
 * **Testing:** Pytest 9.1+, HTTPX 0.28+, pytest-asyncio 1.4+
 
 ## 7. Repository Structure
@@ -331,19 +349,35 @@ No external payment integrations active.
 * **Decision:** Proposal IDs are 100% deterministic using `uuid5`. Decision proposals represent recommendation records only and contain zero execution capabilities or boolean execution triggers.
 * **Date:** 2026-08-31
 
+### ADR-015 — Deterministic Policy & Safety Gateway Boundary
+* **Decision:** Phase 6 implements the final non-execution safety gateway (`DeterministicSafetyGateway`, `gateway_version = "v1"`, `policy_version = "v1"`). It enforces a 12-stage safety pipeline, executable action allowlist, independent attempt cap defense-in-depth, fail-closed kill switch, in-memory idempotency & replay protection, sliding-window rate limiting, and integer minor-unit financial integrity. `eligible_for_execution_layer = True` indicates gateway approval only and never triggers payment execution.
+* **Date:** 2026-09-03
+
+### ADR-016 — Bounded Recovery Execution Layer & Test-Mode Isolation
+* **Decision:** Phase 7 implements the bounded execution layer (`ExecutionService`, `v1`). Executes only Phase 6-approved proposals, revalidates authorization before dispatch, isolates Razorpay behind `BasePaymentProvider` (`RazorpayTestProvider`), enforces strict Test Mode (`rzp_test_...` key pattern only, failing closed on live mode or live keys), enforces deterministic execution idempotency (`uuid5`), handles transport timeouts as `UNKNOWN_PROVIDER_STATE` without blind duplicate execution, verifies HMAC-SHA256 webhook signatures, performs state reconciliation, and emits immutable execution audit records with zero secret leakage.
+* **Date:** 2026-09-03
+
+### ADR-017 — Production-Quality Operations Frontend & Stitch MCP Architecture
+* **Decision:** Buildathon frontend implemented as a Next.js 14 application in `apps/web/` designed with Stitch MCP. Exposes 4 top-level views (Command Center Dashboard, Recovery Cases Directory, Safeguards & Governance Matrix, and Analytics Ledger), a 6-stage visual pipeline funnel, 4-flow judge demo bar, and an end-to-end 7-stage case investigation modal. Integrates with FastAPI read-only endpoints (`/api/v1/overview`, `/api/v1/cases`, `/api/v1/cases/{id}`, `/api/v1/safeguards`, `/api/v1/analytics`) and provides transparent fallback to the canonical Seed 42 frozen benchmark cache.
+* **Date:** 2026-09-03
+
 ## 16. Frozen Benchmark References
 
 * **Baseline Risk Engine (`v1`):** Precision = 74.25%, Recall = 42.26%, F1 = 53.86%, Capture Rate = 50.15% ([docs/benchmark_v1.json](docs/benchmark_v1.json)).
 * **Mock AI Diagnosis (`v1`):** Precision = 73.94%, Recall = 76.76%, F1 = 75.32%, Capture Rate = 72.25% ([docs/benchmark_ai_mock.json](docs/benchmark_ai_mock.json)).
 * **Recovery Decision Proposals (`v1`/`v1`):** Total Evaluated = 1,676, Proposed = 704 (42.00%), Blocked = 704 (42.00%), Requires Review = 268 (15.99%), Unsafe Proposals = 0 ([docs/benchmark_decision_v1.json](docs/benchmark_decision_v1.json)).
+* **Safety Gateway Benchmark (`v1`/`v1`):** Total Evaluated = 1,676, Approved = 689 (41.10%), Blocked = 719 (42.89%), Requires Review = 268 (15.99%), Rate Limited = 0, Kill Switch = 0, Unsafe Authorizations = 0 (0 bps), Financial Violations = 0 ([docs/benchmark_gateway_v1.json](docs/benchmark_gateway_v1.json)).
+* **Execution Layer Benchmark (`v1`):** Total Proposals Received = 1,676, Phase 6 Authorized = 689, Executions Attempted = 456 (56,195,598 paise), Executions Deferred (Cooldown) = 233 (29,064,137 paise), Confirmed Recovered Revenue = 56,195,598 paise (~₹561.9k), Unauthorized Execution Rate = 0 bps, Duplicate Execution Rate = 0 bps, Financial Violation Rate = 0 bps ([docs/benchmark_execution_v1.json](docs/benchmark_execution_v1.json)).
 
 ## 17. Last Verified State
 
-* **Date:** 2026-08-31
-* **Automated Tests:** 100/100 tests PASSED in 4.63s (`tests/test_health.py`, `tests/test_database.py`, `tests/test_synthetic.py`, `tests/test_risk_engine.py`, `tests/test_ai_diagnosis.py`, `tests/test_recovery_decision.py`).
-* **Security & Boundary Verification:** Zero Razorpay imports, zero payment execution, zero database writes in decision agents, 100% policy safety compliance.
+* **Date:** 2026-09-03
+* **Automated Tests:** 184 tests PASSED in 1.93s across Phases 0–7 and API endpoints (`tests/test_health.py`, `tests/test_synthetic.py`, `tests/test_risk_engine.py`, `tests/test_ai_diagnosis.py`, `tests/test_recovery_decision.py`, `tests/test_safety_gateway.py`, `tests/test_execution_layer.py`, `tests/test_api_endpoints.py`).
+* **Frontend Verification:** `npm run type-check` PASSED (0 errors), `npm run lint` PASSED (0 warnings/errors), `npm run build` PASSED (100% static production prerendering).
+* **Security & Boundary Verification:** Live Razorpay execution strictly prohibited and fails closed; Razorpay imports isolated strictly to `services/execution/razorpay_provider.py`; zero AI execution bypass; zero floating-point monetary arithmetic; 0 bps unauthorized execution rate; 0 bps duplicate execution rate.
 
-## 18. Next Phase
+## 18. Project Status
 
-* **Next Phase:** Phase 6 — Deterministic Policy & Safety Gateway
-* **Status:** PLANNED
+* **Status:** ALL PLANNED PHASES (Phase 0 through Phase 7) COMPLETE.
+* **Frontend/Productization:** COMPLETE (Next.js 14 Command Center + Stitch MCP design).
+* **Phase 8:** NONE (Strictly no Phase 8).

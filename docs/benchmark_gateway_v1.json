@@ -1,0 +1,36 @@
+{
+  "gateway_version": "v1",
+  "policy_version": "v1",
+  "decision_version": "v1",
+  "total_evaluated": 1676,
+  "approved_count": 689,
+  "blocked_count": 719,
+  "requires_review_count": 268,
+  "rate_limited_count": 0,
+  "kill_switch_count": 0,
+  "invalid_proposal_count": 0,
+  "replay_count": 0,
+  "unsafe_authorizations": 0,
+  "unsafe_authorization_rate_bps": 0,
+  "financial_integrity_violations": 0,
+  "decision_distribution_bps": {
+    "APPROVED": 4110,
+    "BLOCKED": 4289,
+    "REQUIRES_REVIEW": 1599,
+    "RATE_LIMITED": 0,
+    "KILL_SWITCH_ACTIVE": 0,
+    "INVALID_PROPOSAL": 0
+  },
+  "reason_code_counts": {
+    "APPROVED_FOR_EXECUTION_LAYER": 689,
+    "BLOCK_NON_EXECUTABLE_ACTION": 704,
+    "MISSING_HUMAN_APPROVAL": 268,
+    "BLOCK_UNRESOLVED_HARD_DECLINE": 15
+  },
+  "financial_metrics_paise": {
+    "total_evaluated_paise": 531161966,
+    "approved_paise": 85259735,
+    "blocked_paise": 184300717,
+    "requires_review_paise": 261601514
+  }
+}
